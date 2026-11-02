@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../authStore'
 import { pullAll, pushAll } from '../lib/sync'
 import { toast } from '../toastStore'
+import GitHubPanel from '../components/GitHubPanel'
 
 export default function Settings() {
   const { user, loading, signInGithub, signInEmail, signUpEmail, signOut } = useAuth()
@@ -61,7 +62,8 @@ export default function Settings() {
           </div>
         </div>
       ))}
-      <p className="text-xs text-slate-500">Appearance, Language, GitHub backup và Data Management sẽ bổ sung sau. Export/Import dự án nằm ở trang Projects.</p>
+      <GitHubPanel />
+      <p className="text-xs text-slate-500">Appearance và Language sẽ bổ sung sau. Export/Import dự án nằm ở trang Projects.</p>
     </div>
   )
 }
