@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Users, FolderKanban, Terminal, Files, History, Settings, Menu, Search, Sun, Moon, GitBranch } from 'lucide-react'
 import { useUI } from '../store'
+import { useAuth } from '../authStore'
+import { supabase } from '../lib/supabase'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,7 +17,9 @@ const NAV = [
 
 export default function Layout() {
   const [open, setOpen] = useState(false)
-  const { theme, toggleTheme, mode } = useUI()
+  const { theme, toggleTheme } = useUI()
+  const user = useAuth(s => s.user)
+  const mode = !supabase ? 'Offline Mode' : user ? 'Connected' : 'Chưa đăng nhập'
   return (
     <div className="min-h-screen">
       <aside className={`fixed inset-y-0 left-0 z-30 w-60 border-r border-slate-200 bg-white p-4 transition-transform dark:border-slate-800 dark:bg-slate-900 md:translate-x-0 ${open ? '' : '-translate-x-full'}`}>
@@ -40,7 +44,7 @@ export default function Layout() {
           <div className="ml-auto flex items-center gap-3 text-sm">
             <span className="hidden text-slate-500 lg:inline">Project: <b>—</b></span>
             <span className="flex items-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-xs dark:border-slate-700">
-              <GitBranch size={12} /> GitHub: chưa kết nối · {mode === 'demo' ? 'Demo Mode' : mode}
+              <GitBranch size={12} /> GitHub: chưa kết nối · {mode}
             </span>
             <button className="btn" onClick={toggleTheme} aria-label="Đổi giao diện">{theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}</button>
           </div>

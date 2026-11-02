@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
 import Projects from './pages/Projects'
 import Settings from './pages/Settings'
+import Activity from './pages/Activity'
 import Workspace from './pages/Workspace'
 import Placeholder from './pages/Placeholder'
 
@@ -19,7 +20,7 @@ export default function App() {
           <Route path="workspace" element={<Workspace />} />
           <Route path="workspace/:id" element={<Workspace />} />
           <Route path="files" element={<Placeholder title="File Manager" phase={3} />} />
-          <Route path="activity" element={<Placeholder title="Activity History" phase={3} />} />
+          <Route path="activity" element={<Activity />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Placeholder title="Không tìm thấy trang" phase={1} />} />
         </Route>
