@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Plus, FolderPlus, Play, ExternalLink } from 'lucide-react'
-import { DEMO_PROJECTS, PROVIDERS } from '../data/providers'
+import { PROVIDERS } from '../data/providers'
 import { useAccounts } from '../accountsStore'
+import { useProjects } from '../projectsStore'
 import { browserManager } from '../lib/browserManager'
 
 const Stat = ({ label, v }: { label: string; v: number }) => (
@@ -10,11 +11,11 @@ const Stat = ({ label, v }: { label: string; v: number }) => (
 
 export default function Dashboard() {
   const accounts = useAccounts(s => s.accounts)
-  const projects = DEMO_PROJECTS
+  const projects = useProjects(s => s.projects)
   return (
     <div className="space-y-8">
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm">
-        Tài khoản AI lưu trong trình duyệt này (Offline Mode). Dự án bên dưới vẫn là dữ liệu mẫu; chưa có kết nối Supabase/GitHub.
+        Tài khoản AI lưu trong trình duyệt này (Offline Mode). Dự án cũng lưu tại đây; chưa có kết nối Supabase/GitHub.
       </div>
       <section>
         <h2 className="mb-3 text-lg font-semibold">AI Accounts</h2>
@@ -41,7 +42,7 @@ export default function Dashboard() {
         )}
       </section>
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Projects (mẫu)</h2>
+        <h2 className="mb-3 text-lg font-semibold">Projects</h2>
         <div className="grid grid-cols-3 gap-3">
           <Stat label="Tổng" v={projects.length} />
           <Stat label="Đang hoạt động" v={projects.filter(p => p.status === 'active').length} />
