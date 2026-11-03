@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, FolderKanban, Terminal, Files, History, Setting
 import { useUI } from '../store'
 import { useAuth } from '../authStore'
 import { useGitHub } from '../githubStore'
+import { useProjects } from '../projectsStore'
 import { supabase } from '../lib/supabase'
 
 const NAV = [
@@ -21,6 +22,8 @@ export default function Layout() {
   const { theme, toggleTheme } = useUI()
   const user = useAuth(s => s.user)
   const gh = useGitHub()
+  const projects = useProjects(s => s.projects)
+  const cur = [...projects].filter(p => p.status === 'active').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
   const mode = !supabase ? 'Offline Mode' : user ? 'Connected' : 'Chưa đăng nhập'
   return (
     <div className="min-h-screen">
@@ -44,7 +47,7 @@ export default function Layout() {
             <input placeholder="Tìm kiếm…" className="w-full rounded-lg border border-slate-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-slate-700" />
           </div>
           <div className="ml-auto flex items-center gap-3 text-sm">
-            <span className="hidden text-slate-500 lg:inline">Project: <b>—</b></span>
+            <span className="hidden text-slate-500 lg:inline">Project: <b>{cur?.name ?? '—'}</b></span>
             <span className="flex items-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-xs dark:border-slate-700">
               <GitBranch size={12} /> GitHub: {gh.login ? (gh.repo || 'chưa chọn repo') : 'chưa kết nối'} · {mode}
             </span>
