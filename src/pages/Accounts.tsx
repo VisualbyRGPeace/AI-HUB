@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { ExternalLink, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
 import { PROVIDERS } from '../data/providers'
 import { useAccounts, type AccountInput } from '../accountsStore'
-import { browserManager } from '../lib/browserManager'
+import { browserManager, PROFILE_RE } from '../lib/browserManager'
 import { toast } from '../toastStore'
 
 const EMPTY: AccountInput = { providerId: 'claude', displayName: '', website: PROVIDERS.claude.website, profile: '', notes: '' }
@@ -10,6 +10,7 @@ const EMPTY: AccountInput = { providerId: 'claude', displayName: '', website: PR
 function validate(f: AccountInput): string | null {
   if (!f.displayName.trim()) return 'Vui lòng nhập tên hiển thị.'
   if (f.displayName.length > 60) return 'Tên hiển thị tối đa 60 ký tự.'
+  if (f.profile && !PROFILE_RE.test(f.profile)) return 'Profile phải là tên thư mục Chrome: Default, Profile 1, Profile 2… (hoặc để trống).'
   if (!PROVIDERS[f.providerId]) return 'Nhà cung cấp không hợp lệ.'
   try { if (new URL(f.website).protocol !== 'https:') return 'URL phải bắt đầu bằng https://' } catch { return 'URL không hợp lệ.' }
   return null
@@ -99,7 +100,7 @@ export default function Accounts() {
             </select>
             <input className={input} placeholder="Tên hiển thị (vd: Claude Work)" value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} />
             <input className={input} placeholder="Website URL (https://…)" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} />
-            <input className={input} placeholder="Tên browser profile (tùy chọn)" value={form.profile} onChange={e => setForm({ ...form, profile: e.target.value })} />
+            <input className={input} placeholder="Thư mục profile Chrome: Default, Profile 1… (tùy chọn)" value={form.profile} onChange={e => setForm({ ...form, profile: e.target.value })} />
             <textarea className={input} rows={2} placeholder="Ghi chú (không nhập mật khẩu)" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
             {err && <p className="text-sm text-red-500">{err}</p>}
             <div className="flex justify-end gap-2">

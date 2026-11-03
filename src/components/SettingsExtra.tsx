@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Download, Moon, Sun, Trash2, Upload } from 'lucide-react'
 import { useUI } from '../store'
 import { useAccounts, type Account } from '../accountsStore'
@@ -19,6 +19,7 @@ export default function SettingsExtra() {
   const accounts = useAccounts(s => s.accounts)
   const projects = useProjects(s => s.projects)
   const file = useRef<HTMLInputElement>(null)
+  const [local, setLocal] = useState(browserManager.isLocalEnabled())
   const status = browserManager.getIntegrationStatus()
 
   const exportAll = () => {
@@ -57,10 +58,14 @@ export default function SettingsExtra() {
         <b>Appearance</b>
         <button className="btn" onClick={toggleTheme}>{theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />} Đang dùng giao diện {theme === 'dark' ? 'tối' : 'sáng'} — bấm để đổi</button>
       </div>
-      <div className="card space-y-1">
+      <div className="card space-y-2">
         <b>Browser Integration</b>
-        <p className="text-sm text-slate-500">Chế độ hiện tại: <b>External Browser</b>. {status.note}</p>
-        <p className="text-xs text-slate-500">Local Browser Manager (ứng dụng phụ trên Windows) chưa tồn tại nên chưa thể bật.</p>
+        <p className="text-sm text-slate-500">Chế độ hiện tại: <b>{local ? 'Local Browser Manager' : 'External Browser'}</b>. {status.note}</p>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={local} onChange={e => { browserManager.setLocalEnabled(e.target.checked); setLocal(e.target.checked); toast.success(e.target.checked ? 'Đã bật Local Browser Manager.' : 'Đã tắt Local Browser Manager.') }} />
+          Dùng Local Browser Manager (chỉ tick sau khi đã cài AI HUB Launcher trên Windows)
+        </label>
+        <p className="text-xs text-slate-500">Cần Chrome trên Windows và tệp cài đặt đi kèm. Mỗi tài khoản nhập tên thư mục profile Chrome (Default, Profile 1…) ở trang AI Accounts.</p>
       </div>
       <div className="card space-y-3">
         <b>Data Management</b>
