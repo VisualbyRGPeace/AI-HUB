@@ -4,6 +4,8 @@ import { PROVIDERS } from '../data/providers'
 import { useAccounts } from '../accountsStore'
 import { useProjects } from '../projectsStore'
 import { browserManager } from '../lib/browserManager'
+import { useAuth } from '../authStore'
+import { supabase } from '../lib/supabase'
 
 const Stat = ({ label, v }: { label: string; v: number }) => (
   <div className="card"><div className="text-2xl font-bold">{v}</div><div className="text-xs text-slate-500">{label}</div></div>
@@ -12,10 +14,14 @@ const Stat = ({ label, v }: { label: string; v: number }) => (
 export default function Dashboard() {
   const accounts = useAccounts(s => s.accounts)
   const projects = useProjects(s => s.projects)
+  const user = useAuth(s => s.user)
+  const note = !supabase ? 'Offline Mode: dữ liệu lưu trong trình duyệt này, chưa kết nối Supabase.'
+    : user ? `Connected Mode: đã đăng nhập ${user.email ?? ''}. Vào Settings để đồng bộ.`
+    : 'Dữ liệu lưu trong trình duyệt này. Đăng nhập ở Settings nếu muốn đồng bộ lên cloud (không bắt buộc).'
   return (
     <div className="space-y-8">
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm">
-        Tài khoản AI lưu trong trình duyệt này (Offline Mode). Dự án cũng lưu tại đây; chưa có kết nối Supabase/GitHub.
+        {note}
       </div>
       <section>
         <h2 className="mb-3 text-lg font-semibold">AI Accounts</h2>
