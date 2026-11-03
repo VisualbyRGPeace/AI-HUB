@@ -5,6 +5,7 @@ import { useAuth } from '../authStore'
 import { pullAll, pushAll } from '../lib/sync'
 import { toast } from '../toastStore'
 import GitHubPanel from '../components/GitHubPanel'
+import SettingsExtra from '../components/SettingsExtra'
 
 export default function Settings() {
   const { user, loading, signInGithub, signInEmail, signUpEmail, signOut } = useAuth()
@@ -63,7 +64,8 @@ export default function Settings() {
         </div>
       ))}
       <GitHubPanel />
-      <p className="text-xs text-slate-500">Appearance và Language sẽ bổ sung sau. Export/Import dự án nằm ở trang Projects.</p>
+      <SettingsExtra />
+      <p className="text-xs text-slate-500">Giao diện hiện chỉ có tiếng Việt/Anh trộn, chưa có tính năng đổi ngôn ngữ.</p>
     </div>
   )
 }
