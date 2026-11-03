@@ -1,29 +1,24 @@
 import { create } from 'zustand'
 
-export type Theme = 'dark' | 'light'
-export type DataMode = 'demo' | 'connected' | 'offline'
+export type Theme = 'light' | 'dark'
+const KEY = 'aihub:ui-theme'
 
 function applyTheme(t: Theme) {
   document.documentElement.classList.toggle('dark', t === 'dark')
-  try { localStorage.setItem('aihub:theme', t) } catch { /* storage có thể bị chặn */ }
+  try { localStorage.setItem(KEY, t) } catch { /* storage có thể bị chặn */ }
 }
 
 function initialTheme(): Theme {
-  try { return (localStorage.getItem('aihub:theme') as Theme) || 'dark' } catch { return 'dark' }
+  try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light' } catch { return 'light' }
 }
 
-interface UIState {
-  theme: Theme
-  mode: DataMode
-  toggleTheme: () => void
-}
+interface UIState { theme: Theme; toggleTheme: () => void }
 
 const start = initialTheme()
-applyTheme(start)
+document.documentElement.classList.toggle('dark', start === 'dark')
 
 export const useUI = create<UIState>((set, get) => ({
   theme: start,
-  mode: 'demo', // chưa cấu hình backend => luôn là Demo Mode
   toggleTheme: () => {
     const next: Theme = get().theme === 'dark' ? 'light' : 'dark'
     applyTheme(next)

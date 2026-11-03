@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { useAccounts, type Account } from '../accountsStore'
-import { useProjects, type Project } from '../projectsStore'
+import { normalizeProject, useProjects, type Project } from '../projectsStore'
 
 type Row<T> = { id: string; data: T; updated_at: string }
 
@@ -10,10 +10,14 @@ export async function pushAll(): Promise<void> {
   const now = new Date().toISOString()
   const accs = useAccounts.getState().accounts
   const projs = useProjects.getState().projects
-  const a = await supabase.from('ai_accounts').upsert(accs.map(x => ({ id: x.id, data: x, updated_at: now })))
-  if (a.error) throw a.error
-  const p = await supabase.from('projects').upsert(projs.map(x => ({ id: x.id, data: x, updated_at: x.updatedAt })))
-  if (p.error) throw p.error
+  if (accs.length) {
+    const a = await supabase.from('ai_accounts').upsert(accs.map(x => ({ id: x.id, data: x, updated_at: now })))
+    if (a.error) throw a.error
+  }
+  if (projs.length) {
+    const p = await supabase.from('projects').upsert(projs.map(x => ({ id: x.id, data: x, updated_at: x.updatedAt })))
+    if (p.error) throw p.error
+  }
   for (const [table, ids] of [['ai_accounts', accs.map(x => x.id)], ['projects', projs.map(x => x.id)]] as const) {
     const { data, error } = await supabase.from(table).select('id')
     if (error) throw error
@@ -28,18 +32,16 @@ export async function pullAll(): Promise<{ accounts: number; projects: number }>
   const [a, p] = await Promise.all([supabase.from('ai_accounts').select('*'), supabase.from('projects').select('*')])
   if (a.error) throw a.error
   if (p.error) throw p.error
-  const localAcc = useAccounts.getState().accounts
-  const newAcc = (a.data as Row<Account>[]).filter(r => !localAcc.some(x => x.id === r.id)).map(r => r.data)
-  useAccounts.setState({ accounts: [...localAcc, ...newAcc] })
+  const newAcc = useAccounts.getState().merge((a.data as Row<Account>[]).map(r => r.data))
 
   const localProj = useProjects.getState().projects
   let changed = 0
   const merged = [...localProj]
   for (const r of p.data as Row<Project>[]) {
     const i = merged.findIndex(x => x.id === r.id)
-    if (i < 0) { merged.push(r.data); changed++ }
-    else if (new Date(r.data.updatedAt) > new Date(merged[i].updatedAt)) { merged[i] = r.data; changed++ }
+    if (i < 0) { merged.push(normalizeProject(r.data)); changed++ }
+    else if (new Date(r.data.updatedAt) > new Date(merged[i].updatedAt)) { merged[i] = normalizeProject(r.data); changed++ }
   }
   useProjects.setState({ projects: merged })
-  return { accounts: newAcc.length, projects: changed }
+  return { accounts: newAcc, projects: changed }
 }

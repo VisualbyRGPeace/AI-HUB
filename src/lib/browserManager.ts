@@ -30,8 +30,8 @@ export const browserManager = {
   },
   getIntegrationStatus(): IntegrationStatus {
     return flag()
-      ? { mode: 'local', localAvailable: true, note: 'Mở bằng Chrome đúng profile qua AI HUB Launcher (tài khoản có ô profile hợp lệ). Tài khoản khác vẫn mở tab mới.' }
-      : { mode: 'external', localAvailable: false, note: 'Mở website chính thức ở tab mới; bạn tự quản lý phiên đăng nhập.' }
+      ? { mode: 'local', localAvailable: true, note: 'Đang bật: tài khoản có profile hợp lệ sẽ mở bằng đúng profile Chrome qua AI HUB Launcher; tài khoản khác vẫn mở ở tab mới.' }
+      : { mode: 'external', localAvailable: false, note: 'Đang tắt: mở website chính thức ở tab mới, bạn tự quản lý phiên đăng nhập.' }
   },
   setDefaultAccount(id: string) {
     useAccounts.getState().setDefault(id)

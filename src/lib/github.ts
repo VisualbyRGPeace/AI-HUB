@@ -14,8 +14,12 @@ async function gh<T>(token: string, path: string, init?: RequestInit): Promise<T
   }
   return r.json() as Promise<T>
 }
-const enc = (s: string) => btoa(unescape(encodeURIComponent(s)))
-const dec = (b: string) => decodeURIComponent(escape(atob(b.replace(/\n/g, ''))))
+const enc = (s: string) => {
+  let bin = ''
+  for (const b of new TextEncoder().encode(s)) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+const dec = (b: string) => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, '')), c => c.charCodeAt(0)))
 const url = (p: string) => p.split('/').map(encodeURIComponent).join('/')
 
 export const getUser = (t: string) => gh<{ login: string }>(t, '/user')

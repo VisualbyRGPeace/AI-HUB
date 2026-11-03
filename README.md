@@ -36,15 +36,21 @@ Routing dùng `HashRouter` và `base: './'` nên không phụ thuộc tên repo 
 
 Xem `.env.example` cho chạy local.
 
+## Giao diện
+- Trắng đen, có chế độ sáng/tối (nút ở cuối thanh bên). Màu nằm ở biến CSS trong `src/index.css`.
+- Toàn bộ icon dùng bộ line icon [Lucide](https://lucide.dev); nét vẽ thống nhất qua class `.lucide`.
+- Hộp thoại xác nhận/nhập liệu nằm trong app (`src/dialogStore.ts`), không dùng `confirm()`/`prompt()` của trình duyệt.
+
 ## Cấu trúc
 ```
-src/pages        Dashboard, Accounts, Projects, Workspace, Activity, Settings
+src/pages        Tổng quan, Tài khoản AI, Dự án, Làm việc, Tệp, Lịch sử, Cài đặt
+src/components   Layout, Modal, Dialogs, Toasts, ui (thành phần dùng chung)
 src/data         Provider registry (thêm nhà cung cấp AI tại đây)
-src/lib          browserManager, handoff, supabase, sync
+src/lib          browserManager, fileDb, github, handoff, supabase, sync
 src/*Store.ts    Dữ liệu (zustand + localStorage)
 supabase/        schema.sql (bảng + RLS)
 ```
 
-## Lộ trình
-Đã có: tài khoản AI, dự án, Workspace/Handoff, Supabase Auth + đồng bộ, Activity History.
-Chưa có: File Manager, sao lưu lên repo GitHub, Cloudflare Worker, Local Browser Manager.
+## Tính năng
+Tài khoản AI, dự án, Làm việc/Bàn giao giữa các AI, quản lý tệp (IndexedDB), sao lưu lên repo GitHub riêng tư, đồng bộ Supabase (tùy chọn), lịch sử hoạt động.
+Chưa có: Cloudflare Worker, AI HUB Launcher cho Local Browser Manager (tùy chọn *Mở bằng đúng profile Chrome* cần launcher này).

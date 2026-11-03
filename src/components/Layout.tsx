@@ -1,60 +1,64 @@
-import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, FolderKanban, Terminal, Files, History, Settings, Menu, Search, Sun, Moon, GitBranch } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Files, Folder, History, LayoutGrid, Menu, Moon, Settings, SquarePen, Sun, UserRound, X } from 'lucide-react'
 import { useUI } from '../store'
 import { useAuth } from '../authStore'
-import { useGitHub } from '../githubStore'
-import { useProjects } from '../projectsStore'
-import { supabase } from '../lib/supabase'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/accounts', label: 'AI Accounts', icon: Users },
-  { to: '/projects', label: 'Projects', icon: FolderKanban },
-  { to: '/workspace', label: 'Workspace', icon: Terminal },
-  { to: '/files', label: 'File Manager', icon: Files },
-  { to: '/activity', label: 'Activity History', icon: History },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/', label: 'Tổng quan', icon: LayoutGrid },
+  { to: '/accounts', label: 'Tài khoản AI', icon: UserRound },
+  { to: '/projects', label: 'Dự án', icon: Folder },
+  { to: '/workspace', label: 'Làm việc', icon: SquarePen },
+  { to: '/files', label: 'Tệp', icon: Files },
+  { to: '/activity', label: 'Lịch sử', icon: History },
+  { to: '/settings', label: 'Cài đặt', icon: Settings },
 ]
 
 export default function Layout() {
   const [open, setOpen] = useState(false)
   const { theme, toggleTheme } = useUI()
   const user = useAuth(s => s.user)
-  const gh = useGitHub()
-  const projects = useProjects(s => s.projects)
-  const cur = [...projects].filter(p => p.status === 'active').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
-  const mode = !supabase ? 'Offline Mode' : user ? 'Connected' : 'Chưa đăng nhập'
+  const { pathname } = useLocation()
+
+  useEffect(() => { setOpen(false); window.scrollTo(0, 0) }, [pathname])
+  useEffect(() => {
+    if (!open) return
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [open])
+
   return (
     <div className="min-h-screen">
-      <aside className={`fixed inset-y-0 left-0 z-30 w-60 border-r border-slate-200 bg-white p-4 transition-transform dark:border-slate-800 dark:bg-slate-900 md:translate-x-0 ${open ? '' : '-translate-x-full'}`}>
-        <div className="mb-6 text-lg font-bold tracking-tight">AI <span className="text-brand">HUB</span></div>
-        <nav className="space-y-1">
+      <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b border-line bg-paper px-3 md:hidden">
+        <button className="btn btn-icon btn-ghost" onClick={() => setOpen(true)} aria-label="Mở menu"><Menu size={18} /></button>
+        <span className="font-semibold tracking-tight">AI HUB</span>
+      </header>
+
+      <aside className={`fixed inset-y-0 left-0 z-30 flex w-60 flex-col border-r border-line bg-paper px-3 py-4 transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="mb-4 flex items-center px-2">
+          <span className="mr-auto text-lg font-semibold tracking-tight">AI HUB</span>
+          <button className="btn btn-icon btn-ghost md:hidden" onClick={() => setOpen(false)} aria-label="Đóng menu"><X size={18} /></button>
+        </div>
+        <nav className="flex-1 space-y-0.5">
           {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end={to === '/'} onClick={() => setOpen(false)}
-              className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-brand/10 font-medium text-brand' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
-              <Icon size={18} />{label}
+            <NavLink key={to} to={to} end={to === '/'}
+              className={({ isActive }) => `flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${isActive ? 'bg-ink font-medium text-paper' : 'text-mute hover:bg-soft hover:text-ink'}`}>
+              <Icon size={16} />{label}
             </NavLink>
           ))}
         </nav>
+        <div className="space-y-2 border-t border-line px-2 pt-3">
+          <p className="truncate text-xs text-mute" title={user?.email ?? undefined}>{user ? user.email ?? 'Đã đăng nhập' : 'Dữ liệu lưu trên trình duyệt này'}</p>
+          <button className="btn w-full" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}{theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}
+          </button>
+        </div>
       </aside>
       {open && <div className="fixed inset-0 z-20 bg-black/40 md:hidden" onClick={() => setOpen(false)} />}
+
       <div className="md:pl-60">
-        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
-          <button className="btn md:hidden" onClick={() => setOpen(true)} aria-label="Menu"><Menu size={18} /></button>
-          <div className="relative hidden max-w-sm flex-1 sm:block">
-            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
-            <input placeholder="Tìm kiếm…" className="w-full rounded-lg border border-slate-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-slate-700" />
-          </div>
-          <div className="ml-auto flex items-center gap-3 text-sm">
-            <span className="hidden text-slate-500 lg:inline">Project: <b>{cur?.name ?? '—'}</b></span>
-            <span className="flex items-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-xs dark:border-slate-700">
-              <GitBranch size={12} /> GitHub: {gh.login ? (gh.repo || 'chưa chọn repo') : 'chưa kết nối'} · {mode}
-            </span>
-            <button className="btn" onClick={toggleTheme} aria-label="Đổi giao diện">{theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}</button>
-          </div>
-        </header>
-        <main className="mx-auto max-w-6xl p-4 md:p-8"><Outlet /></main>
+        <main className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10"><Outlet /></main>
       </div>
     </div>
   )

@@ -1,23 +1,31 @@
-import { useMemo, useState } from 'react'
-import { ExternalLink, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { AlertCircle, ExternalLink, Pencil, Plus, Search, Star, Trash2, UserRound } from 'lucide-react'
 import { PROVIDERS } from '../data/providers'
 import { useAccounts, type AccountInput } from '../accountsStore'
 import { browserManager, PROFILE_RE } from '../lib/browserManager'
+import { fmtDate } from '../lib/format'
+import { confirmDialog } from '../dialogStore'
 import { toast } from '../toastStore'
+import { Empty, Field, IconButton, PageHeader } from '../components/ui'
+import Modal from '../components/Modal'
+import ProviderIcon from '../components/ProviderIcon'
 
 const EMPTY: AccountInput = { providerId: 'claude', displayName: '', website: PROVIDERS.claude.website, profile: '', notes: '' }
 
 function validate(f: AccountInput): string | null {
   if (!f.displayName.trim()) return 'Vui lòng nhập tên hiển thị.'
-  if (f.displayName.length > 60) return 'Tên hiển thị tối đa 60 ký tự.'
-  if (f.profile && !PROFILE_RE.test(f.profile)) return 'Profile phải là tên thư mục Chrome: Default, Profile 1, Profile 2… (hoặc để trống).'
+  if (f.displayName.trim().length > 60) return 'Tên hiển thị tối đa 60 ký tự.'
+  if (f.profile.trim() && !PROFILE_RE.test(f.profile.trim())) return 'Profile phải là Default, Profile 1, Profile 2… (hoặc để trống).'
   if (!PROVIDERS[f.providerId]) return 'Nhà cung cấp không hợp lệ.'
-  try { if (new URL(f.website).protocol !== 'https:') return 'URL phải bắt đầu bằng https://' } catch { return 'URL không hợp lệ.' }
+  try { if (new URL(f.website).protocol !== 'https:') return 'Địa chỉ website phải bắt đầu bằng https://' } catch { return 'Địa chỉ website không hợp lệ.' }
   return null
 }
 
 export default function Accounts() {
-  const { accounts, add, update, remove, loadDemo } = useAccounts()
+  const { accounts, add, update, remove, setDefault } = useAccounts()
+  const nav = useNavigate()
+  const location = useLocation()
   const [q, setQ] = useState('')
   const [pf, setPf] = useState('all')
   const [editing, setEditing] = useState<string | 'new' | null>(null)
@@ -25,90 +33,102 @@ export default function Accounts() {
   const [err, setErr] = useState<string | null>(null)
 
   const list = useMemo(() => accounts.filter(a =>
-    (pf === 'all' || a.providerId === pf) && a.displayName.toLowerCase().includes(q.toLowerCase())), [accounts, q, pf])
+    (pf === 'all' || a.providerId === pf) && a.displayName.toLowerCase().includes(q.trim().toLowerCase())), [accounts, q, pf])
 
   const openForm = (id: string | 'new') => {
     const a = accounts.find(x => x.id === id)
     setForm(a ? { providerId: a.providerId, displayName: a.displayName, website: a.website, profile: a.profile, notes: a.notes } : EMPTY)
     setErr(null); setEditing(id)
   }
-  const save = () => {
-    const e = validate(form)
-    if (e) return setErr(e)
-    const clean = { ...form, displayName: form.displayName.trim() }
+
+  // Mở sẵn form khi đến từ nút "Thêm tài khoản" ở Tổng quan.
+  useEffect(() => {
+    if ((location.state as { create?: boolean } | null)?.create) { openForm('new'); nav('.', { replace: true, state: null }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const save = (e: FormEvent) => {
+    e.preventDefault()
+    const clean = { ...form, displayName: form.displayName.trim(), profile: form.profile.trim(), website: form.website.trim(), notes: form.notes.trim() }
+    const msg = validate(clean)
+    if (msg) return setErr(msg)
     if (editing === 'new') { add(clean); toast.success('Đã thêm tài khoản.') }
     else if (editing) { update(editing, clean); toast.success('Đã cập nhật tài khoản.') }
     setEditing(null)
   }
-  const input = 'w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700'
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl font-semibold">AI Accounts</h1>
-        <input className={`${input} max-w-[200px]`} placeholder="Tìm tài khoản…" value={q} onChange={e => setQ(e.target.value)} />
-        <select className={`${input} max-w-[140px] dark:bg-slate-900`} value={pf} onChange={e => setPf(e.target.value)}>
-          <option value="all">Tất cả</option>
-          {Object.values(PROVIDERS).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <button className="btn btn-primary" onClick={() => openForm('new')}><Plus size={16} /> Add Account</button>
-      </div>
-      <p className="text-xs text-slate-500">Offline Mode: dữ liệu chỉ lưu trong trình duyệt này (localStorage). Không lưu mật khẩu hay cookie.</p>
+    <div>
+      <PageHeader title="Tài khoản AI">
+        <button className="btn btn-primary" onClick={() => openForm('new')}><Plus size={16} />Thêm tài khoản</button>
+      </PageHeader>
 
       {accounts.length === 0 ? (
-        <div className="card py-10 text-center">
-          <p className="mb-3 text-slate-500">Chưa có tài khoản nào.</p>
-          <div className="flex justify-center gap-2">
-            <button className="btn btn-primary" onClick={() => openForm('new')}><Plus size={16} /> Thêm tài khoản</button>
-            <button className="btn" onClick={() => { loadDemo(); toast.success('Đã nạp dữ liệu mẫu.') }}>Nạp dữ liệu mẫu</button>
-          </div>
-        </div>
-      ) : list.length === 0 ? (
-        <div className="card text-center text-slate-500">Không có kết quả phù hợp.</div>
+        <Empty icon={UserRound} text="Chưa có tài khoản nào. Thêm tài khoản để mở nhanh Claude, ChatGPT hoặc Gemini.">
+          <button className="btn btn-primary" onClick={() => openForm('new')}><Plus size={16} />Thêm tài khoản</button>
+        </Empty>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map(a => { const p = PROVIDERS[a.providerId]; return (
-            <div key={a.id} className="card">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: p?.color }} />
-                <b className="truncate">{a.displayName}</b>
-                {a.isDefault && <span className="rounded bg-brand/15 px-1.5 text-xs text-brand">Mặc định</span>}
-              </div>
-              <div className="mb-3 text-xs text-slate-500">
-                {p?.name} · {a.profile || 'Chưa đặt profile'} · {a.lastUsed ? `Dùng: ${new Date(a.lastUsed).toLocaleDateString()}` : 'Chưa mở lần nào'}
-              </div>
-              {a.notes && <p className="mb-3 text-xs">{a.notes}</p>}
-              <div className="flex flex-wrap gap-2">
-                <button className="btn" onClick={() => browserManager.openAccount(a)}><ExternalLink size={14} /> Open</button>
-                <button className="btn" onClick={() => openForm(a.id)} aria-label="Sửa"><Pencil size={14} /></button>
-                {!a.isDefault && <button className="btn" onClick={() => { browserManager.setDefaultAccount(a.id); toast.success('Đã đặt mặc định.') }} aria-label="Đặt mặc định"><Star size={14} /></button>}
-                <button className="btn" onClick={() => { if (confirm(`Xóa "${a.displayName}"?`)) { remove(a.id); toast.success('Đã xóa tài khoản.') } }} aria-label="Xóa"><Trash2 size={14} /></button>
-              </div>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={16} className="pointer-events-none absolute left-3 top-2.5 text-mute" />
+              <input className="input pl-9" placeholder="Tìm tài khoản" aria-label="Tìm tài khoản" value={q} onChange={e => setQ(e.target.value)} />
             </div>
-          )})}
+            <select className="input w-auto" aria-label="Lọc theo nhà cung cấp" value={pf} onChange={e => setPf(e.target.value)}>
+              <option value="all">Tất cả</option>
+              {Object.values(PROVIDERS).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+
+          {list.length === 0 ? <p className="py-10 text-center text-sm text-mute">Không có kết quả phù hợp.</p> : (
+            <div className="list">
+              {list.map(a => (
+                <div key={a.id} className="row">
+                  <ProviderIcon id={a.providerId} size={18} framed />
+                  <div className="min-w-0 flex-1 basis-40">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium">{a.displayName}</span>
+                      {a.isDefault && <span className="chip"><Star size={11} />Mặc định</span>}
+                    </div>
+                    <div className="truncate text-xs text-mute">
+                      {PROVIDERS[a.providerId]?.name ?? a.providerId}{a.profile && ` · ${a.profile}`} · {a.lastUsed ? `mở ${fmtDate(a.lastUsed)}` : 'chưa mở'}
+                    </div>
+                    {a.notes && <div className="truncate text-xs text-mute">{a.notes}</div>}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button className="btn" onClick={() => browserManager.openAccount(a)}><ExternalLink size={14} />Mở</button>
+                    {!a.isDefault && <IconButton label="Đặt làm mặc định" icon={Star} onClick={() => { setDefault(a.id); toast.success('Đã đặt làm mặc định.') }} />}
+                    <IconButton label="Sửa" icon={Pencil} onClick={() => openForm(a.id)} />
+                    <IconButton label="Xóa" icon={Trash2} onClick={async () => { if (await confirmDialog(`Xóa tài khoản "${a.displayName}"?`, 'Xóa')) { remove(a.id); toast.success('Đã xóa tài khoản.') } }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {editing && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditing(null)}>
-          <div className="card w-full max-w-md space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center"><b className="mr-auto">{editing === 'new' ? 'Thêm tài khoản' : 'Sửa tài khoản'}</b>
-              <button onClick={() => setEditing(null)} aria-label="Đóng"><X size={18} /></button></div>
-            <select className={`${input} dark:bg-slate-900`} value={form.providerId}
-              onChange={e => setForm({ ...form, providerId: e.target.value, website: PROVIDERS[e.target.value].website })}>
-              {Object.values(PROVIDERS).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <input className={input} placeholder="Tên hiển thị (vd: Claude Work)" value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} />
-            <input className={input} placeholder="Website URL (https://…)" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} />
-            <input className={input} placeholder="Thư mục profile Chrome: Default, Profile 1… (tùy chọn)" value={form.profile} onChange={e => setForm({ ...form, profile: e.target.value })} />
-            <textarea className={input} rows={2} placeholder="Ghi chú (không nhập mật khẩu)" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-            {err && <p className="text-sm text-red-500">{err}</p>}
+        <Modal title={editing === 'new' ? 'Thêm tài khoản' : 'Sửa tài khoản'} onClose={() => setEditing(null)}>
+          <form className="space-y-4" onSubmit={save}>
+            <Field label="Nhà cung cấp">
+              <select className="input" value={form.providerId} onChange={e => setForm({ ...form, providerId: e.target.value, website: PROVIDERS[e.target.value].website })}>
+                {Object.values(PROVIDERS).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Tên hiển thị"><input className="input" autoFocus placeholder="Ví dụ: Claude Công việc" value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} /></Field>
+            <Field label="Địa chỉ website"><input className="input" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} /></Field>
+            <Field label="Profile Chrome (tùy chọn)" hint="Tên thư mục profile: Default, Profile 1… Chỉ dùng khi bật Local Browser Manager trong Cài đặt.">
+              <input className="input" value={form.profile} onChange={e => setForm({ ...form, profile: e.target.value })} />
+            </Field>
+            <Field label="Ghi chú" hint="Không nhập mật khẩu hay khóa API."><textarea className="input" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
+            {err && <p className="flex items-center gap-2 text-sm" role="alert"><AlertCircle size={16} />{err}</p>}
             <div className="flex justify-end gap-2">
-              <button className="btn" onClick={() => setEditing(null)}>Hủy</button>
-              <button className="btn btn-primary" onClick={save}>Lưu</button>
+              <button type="button" className="btn" onClick={() => setEditing(null)}>Hủy</button>
+              <button type="submit" className="btn btn-primary">Lưu</button>
             </div>
-          </div>
-        </div>
+          </form>
+        </Modal>
       )}
     </div>
   )

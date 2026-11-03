@@ -24,7 +24,7 @@ ${buildContext(p)}`
 }
 
 export function handoffTemplate(p: Project, toAi: string): string {
-  return `# HANDOFF — ${new Date().toLocaleString()}
+  return `# HANDOFF — ${new Date().toLocaleString('vi-VN')}
 Bàn giao cho: ${toAi}
 
 ${tasksMd(p)}
@@ -42,14 +42,27 @@ ${p.tasks.find(t => !t.done)?.text || '(điền vào)'}`
 export const exportMarkdown = (p: Project) =>
   Object.entries(p.docs).map(([k, v]) => `<!-- ${k}.md -->\n${v}`).join('\n\n---\n\n') + `\n\n---\n\n<!-- TASKS.md -->\n${tasksMd(p)}`
 
-export function download(name: string, text: string, type = 'text/plain') {
+export function downloadBlob(name: string, blob: Blob) {
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([text], { type }))
+  a.href = URL.createObjectURL(blob)
   a.download = name
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(a.href)
+  a.remove()
+  // Thu hồi sau một nhịp để trình duyệt kịp bắt đầu tải.
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
+export const download = (name: string, text: string, type = 'text/plain') => downloadBlob(name, new Blob([text], { type }))
+
 export async function copy(text: string): Promise<boolean> {
-  try { await navigator.clipboard.writeText(text); return true } catch { return false }
+  try { await navigator.clipboard.writeText(text); return true } catch { /* thử cách dự phòng */ }
+  try {
+    const t = document.createElement('textarea')
+    t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'
+    document.body.appendChild(t); t.select()
+    const ok = document.execCommand('copy')
+    t.remove()
+    return ok
+  } catch { return false }
 }

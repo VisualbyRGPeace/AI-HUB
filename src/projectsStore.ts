@@ -29,6 +29,16 @@ const uid = () => crypto.randomUUID()
 const now = () => new Date().toISOString()
 const emptyDocs = (): Record<DocKey, string> => ({ PROJECT: '', CONTEXT: '', DECISIONS: '', CHANGELOG: '', HANDOFF: '' })
 
+// Điền các trường còn thiếu của dự án nhập từ ngoài vào để UI không bị lỗi.
+export function normalizeProject(p: Project): Project {
+  const status = p.status === 'completed' || p.status === 'archived' ? p.status : 'active'
+  return {
+    ...p, status, description: p.description ?? '', providerId: p.providerId ?? 'claude', repoUrl: p.repoUrl ?? '',
+    createdAt: p.createdAt ?? now(), updatedAt: p.updatedAt ?? now(),
+    docs: { ...emptyDocs(), ...p.docs }, tasks: Array.isArray(p.tasks) ? p.tasks : [],
+  }
+}
+
 // Offline Mode: lưu trong localStorage của trình duyệt này, không phải cloud.
 export const useProjects = create<S>()(persist((set, get) => {
   const patch = (id: string, fn: (p: Project) => Partial<Project>) =>
@@ -45,16 +55,16 @@ export const useProjects = create<S>()(persist((set, get) => {
     remove: id => set({ projects: get().projects.filter(p => p.id !== id) }),
     duplicate: id => {
       const p = get().projects.find(x => x.id === id)
-      if (p) set({ projects: [{ ...p, id: uid(), name: `${p.name} (bản sao)`, createdAt: now(), updatedAt: now(), tasks: p.tasks.map(t => ({ ...t, id: uid() })) }, ...get().projects] })
+      if (p) set({ projects: [{ ...p, id: uid(), name: `${p.name} (bản sao)`, status: 'active', createdAt: now(), updatedAt: now(), tasks: p.tasks.map(t => ({ ...t, id: uid() })) }, ...get().projects] })
     },
     setDoc: (id, k, v) => patch(id, p => ({ docs: { ...p.docs, [k]: v } })),
     addTask: (id, text) => patch(id, p => ({ tasks: [...p.tasks, { id: uid(), text, done: false }] })),
     toggleTask: (id, tid) => patch(id, p => ({ tasks: p.tasks.map(t => (t.id === tid ? { ...t, done: !t.done } : t)) })),
     removeTask: (id, tid) => patch(id, p => ({ tasks: p.tasks.filter(t => t.id !== tid) })),
-    logProgress: (id, s) => patch(id, p => ({ docs: { ...p.docs, CHANGELOG: `${p.docs.CHANGELOG}\n- ${new Date().toLocaleString()}: ${s}`.trim() } })),
+    logProgress: (id, s) => patch(id, p => ({ docs: { ...p.docs, CHANGELOG: `${p.docs.CHANGELOG}\n- ${new Date().toLocaleString('vi-VN')}: ${s}`.trim() } })),
     importAll: list => {
       const ids = new Set(get().projects.map(p => p.id))
-      const fresh = list.filter(p => !ids.has(p.id))
+      const fresh = list.filter(p => !ids.has(p.id)).map(normalizeProject)
       set({ projects: [...fresh, ...get().projects] })
       return fresh.length
     },

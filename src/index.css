@@ -1,7 +1,50 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-body { @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased; }
-.card { @apply rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900; }
-.btn { @apply inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium transition hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800; }
-.btn-primary { @apply border-transparent bg-brand text-white hover:bg-brand-soft dark:hover:bg-brand-soft; }
+
+:root {
+  --paper: 255 255 255;
+  --ink: 0 0 0;
+  --mute: 107 107 107;
+  --line: 229 229 229;
+  --soft: 245 245 245;
+  color-scheme: light;
+}
+:root.dark {
+  --paper: 0 0 0;
+  --ink: 255 255 255;
+  --mute: 140 140 140;
+  --line: 40 40 40;
+  --soft: 20 20 20;
+  color-scheme: dark;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-paper text-ink antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  /* Toàn bộ icon dùng cùng một nét line mảnh (Lucide) */
+  .lucide { stroke-width: 1.75; flex-shrink: 0; }
+  :focus-visible { outline: 2px solid rgb(var(--ink)); outline-offset: 2px; }
+  input[type='checkbox'] { accent-color: rgb(var(--ink)); width: 1rem; height: 1rem; }
+  ::selection { background: rgb(var(--ink)); color: rgb(var(--paper)); }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-line px-3 text-sm font-medium transition-colors hover:bg-soft disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-primary { @apply border-ink bg-ink text-paper hover:bg-ink/80; }
+  .btn-icon { @apply w-9 px-0; }
+  .btn-ghost { @apply border-transparent; }
+  .input {
+    @apply h-9 w-full rounded-lg border border-line bg-paper px-3 text-sm placeholder:text-mute focus-visible:border-ink focus-visible:outline-none;
+  }
+  textarea.input { @apply h-auto py-2; }
+  .card { @apply rounded-lg border border-line p-4; }
+  .list { @apply divide-y divide-line rounded-lg border border-line; }
+  .row { @apply flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3; }
+  .chip { @apply inline-flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-xs text-mute; }
+}
